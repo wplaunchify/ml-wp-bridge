@@ -1017,7 +1017,7 @@ server.setRequestHandler(InitializeRequestSchema, async (request) => {
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = Object.keys(TOOLS).map(name => ({
     name,
-    description: TOOL_DESCRIPTIONS[name] || `WordPress operation: ${name}`,
+    description: TOOL_DESCRIPTIONS[name] || name,
     inputSchema: {
       type: 'object',
       properties: {
