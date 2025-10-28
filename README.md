@@ -1,6 +1,6 @@
-# ml-wp-bridge
+# ML WP Bridge
 
-WordPress connector for MCP.
+WordPress MCP Server for Cursor IDE - v3.0.0
 
 ## Installation
 
@@ -10,11 +10,40 @@ npx -y github:wplaunchify/ml-wp-bridge
 
 ## Configuration
 
-Set environment variables:
-- `WP_URL` - WordPress site URL
-- `WP_API_KEY` - API key
+Add to your Cursor MCP settings:
 
-## License
+```json
+{
+  "mcpServers": {
+    "ml-cursor-yoursite": {
+      "command": "npx",
+      "args": ["-y", "github:wplaunchify/ml-wp-bridge"],
+      "env": {
+        "WP_URL": "https://your-site.com",
+        "WP_USERNAME": "admin",
+        "WP_PASSWORD": "your-application-password"
+      }
+    }
+  }
+}
+```
 
-GPL-2.0-or-later
+## WordPress Plugin
 
+Download and install: `plugin/ml-cursor-mcp-v3.0.0.zip`
+
+The plugin provides:
+- Application Password support
+- One-click configuration generator
+- Installation instructions
+
+## Features
+
+- 35+ WordPress management tools
+- Direct WordPress REST API integration
+- Standard authentication
+- No custom endpoints
+
+## Version
+
+3.0.0 - Proper MCP architecture

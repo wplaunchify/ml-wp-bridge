@@ -1,7 +1,7 @@
 {
   "name": "ml-wp-bridge",
-  "version": "2.0.0",
-  "description": "WordPress connector",
+  "version": "3.0.0",
+  "description": "WordPress MCP Server - Talks directly to WordPress built-in REST API",
   "main": "index.js",
   "bin": {
     "ml-wp-bridge": "./index.js"
@@ -12,7 +12,10 @@
   "keywords": [
     "wordpress",
     "mcp",
-    "cursor"
+    "cursor",
+    "model-context-protocol",
+    "ai",
+    "rest-api"
   ],
   "author": "ML Claude Team",
   "license": "GPL-2.0-or-later",
@@ -21,6 +24,10 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wplaunchify/ml-wp-bridge.git"
   }
 }
 
