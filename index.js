@@ -20,6 +20,7 @@ const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio
 const {
   CallToolRequestSchema,
   ListToolsRequestSchema,
+  InitializeRequestSchema,
 } = require('@modelcontextprotocol/sdk/types.js');
 
 // Get configuration from environment
@@ -997,6 +998,20 @@ const server = new Server(
     },
   }
 );
+
+// Handle initialization request
+server.setRequestHandler(InitializeRequestSchema, async (request) => {
+  return {
+    protocolVersion: '2024-11-05',
+    serverInfo: {
+      name: 'ml-wp-bridge',
+      version: '2.0.0',
+    },
+    capabilities: {
+      tools: {},
+    },
+  };
+});
 
 // Handle list tools request
 server.setRequestHandler(ListToolsRequestSchema, async () => {
