@@ -1,7 +1,7 @@
 {
   "name": "ml-wp-bridge",
-  "version": "3.0.0",
-  "description": "WordPress MCP Server - Talks directly to WordPress built-in REST API",
+  "version": "4.0.0",
+  "description": "Universal WordPress MCP Server - Hybrid architecture with native REST API + dynamic custom tool discovery",
   "main": "index.js",
   "bin": {
     "ml-wp-bridge": "./index.js"
