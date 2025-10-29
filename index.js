@@ -3,6 +3,7 @@
 /**
  * WordPress MCP Bridge
  * Generic MCP server for WordPress REST API integration
+ * Connects to ML Cursor MCP plugin with 173+ tools
  */
 
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
@@ -22,7 +23,6 @@ if (!WP_URL || !WP_USERNAME || !WP_PASSWORD) {
   process.exit(1);
 }
 
-const WP_API_BASE = `${WP_URL}/wp-json/wp/v2`;
 const SITE_NAME = WP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '').split('.')[0];
 const CUSTOM_API_BASE = `${WP_URL}/wp-json/ml-mcp-${SITE_NAME}/v1`;
 const AUTH_HEADER = 'Basic ' + Buffer.from(`${WP_USERNAME}:${WP_PASSWORD}`).toString('base64');
@@ -44,149 +44,63 @@ async function callWordPress(url, method = 'GET', body = null) {
   const data = await response.json();
   
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${JSON.stringify(data)}`);
+    throw new Error(`WordPress API error: HTTP ${response.status}: ${JSON.stringify(data)}`);
   }
   
   return data;
 }
 
-async function discoverCustomTools() {
+async function discoverTools() {
   try {
-    const manifest = await callWordPress(`${CUSTOM_API_BASE}/manifest`, 'GET');
+    const manifest = await callWordPress(`${CUSTOM_API_BASE}/list-all-tools`, 'GET');
     return manifest.tools || [];
   } catch (error) {
+    console.error('Failed to discover tools from WordPress:', error.message);
     return [];
   }
 }
 
-const STANDARD_TOOLS = {
-  wp_list_posts: {
-    description: 'List posts',
-    handler: async (params) => {
-      const query = new URLSearchParams(params || {}).toString();
-      return await callWordPress(`${WP_API_BASE}/posts${query ? '?' + query : ''}`, 'GET');
-    }
-  },
-  wp_get_post: {
-    description: 'Get post',
-    handler: async (params) => await callWordPress(`${WP_API_BASE}/posts/${params.id}`, 'GET')
-  },
-  wp_create_post: {
-    description: 'Create post',
-    handler: async (params) => await callWordPress(`${WP_API_BASE}/posts`, 'POST', params)
-  },
-  wp_update_post: {
-    description: 'Update post',
-    handler: async (params) => {
-      const { id, ...body } = params;
-      return await callWordPress(`${WP_API_BASE}/posts/${id}`, 'POST', body);
-    }
-  },
-  wp_delete_post: {
-    description: 'Delete post',
-    handler: async (params) => await callWordPress(`${WP_API_BASE}/posts/${params.id}`, 'DELETE')
-  },
-  wp_list_pages: {
-    description: 'List pages',
-    handler: async (params) => {
-      const query = new URLSearchParams(params || {}).toString();
-      return await callWordPress(`${WP_API_BASE}/pages${query ? '?' + query : ''}`, 'GET');
-    }
-  },
-  wp_get_page: {
-    description: 'Get page',
-    handler: async (params) => await callWordPress(`${WP_API_BASE}/pages/${params.id}`, 'GET')
-  },
-  wp_create_page: {
-    description: 'Create page',
-    handler: async (params) => await callWordPress(`${WP_API_BASE}/pages`, 'POST', params)
-  },
-  wp_update_page: {
-    description: 'Update page',
-    handler: async (params) => {
-      const { id, ...body } = params;
-      return await callWordPress(`${WP_API_BASE}/pages/${id}`, 'POST', body);
-    }
-  },
-  wp_delete_page: {
-    description: 'Delete page',
-    handler: async (params) => await callWordPress(`${WP_API_BASE}/pages/${params.id}`, 'DELETE')
-  },
-  wp_list_media: {
-    description: 'List media',
-    handler: async (params) => {
-      const query = new URLSearchParams(params || {}).toString();
-      return await callWordPress(`${WP_API_BASE}/media${query ? '?' + query : ''}`, 'GET');
-    }
-  },
-  wp_get_media: {
-    description: 'Get media',
-    handler: async (params) => await callWordPress(`${WP_API_BASE}/media/${params.id}`, 'GET')
-  },
-  wp_list_users: {
-    description: 'List users',
-    handler: async (params) => {
-      const query = new URLSearchParams(params || {}).toString();
-      return await callWordPress(`${WP_API_BASE}/users${query ? '?' + query : ''}`, 'GET');
-    }
-  },
-  wp_get_user: {
-    description: 'Get user',
-    handler: async (params) => await callWordPress(`${WP_API_BASE}/users/${params.id}`, 'GET')
-  },
-  wp_list_categories: {
-    description: 'List categories',
-    handler: async (params) => {
-      const query = new URLSearchParams(params || {}).toString();
-      return await callWordPress(`${WP_API_BASE}/categories${query ? '?' + query : ''}`, 'GET');
-    }
-  },
-  wp_list_tags: {
-    description: 'List tags',
-    handler: async (params) => {
-      const query = new URLSearchParams(params || {}).toString();
-      return await callWordPress(`${WP_API_BASE}/tags${query ? '?' + query : ''}`, 'GET');
-    }
-  },
-  wp_list_comments: {
-    description: 'List comments',
-    handler: async (params) => {
-      const query = new URLSearchParams(params || {}).toString();
-      return await callWordPress(`${WP_API_BASE}/comments${query ? '?' + query : ''}`, 'GET');
-    }
-  },
-};
-
-function createCustomToolHandler(tool) {
+function createToolHandler(tool) {
   return async (params) => {
     let endpoint = tool.endpoint;
-    if (params.id && endpoint.includes('{id}')) {
-      endpoint = endpoint.replace('{id}', params.id);
+    
+    // Replace path parameters
+    if (params && typeof params === 'object') {
+      for (const [key, value] of Object.entries(params)) {
+        endpoint = endpoint.replace(`{${key}}`, value);
+        endpoint = endpoint.replace(`:${key}`, value);
+      }
     }
+    
     return await callWordPress(endpoint, tool.method, params);
   };
 }
 
 let TOOLS = {};
-let CUSTOM_TOOLS = [];
 
 async function initializeTools() {
-  TOOLS = { ...STANDARD_TOOLS };
-  CUSTOM_TOOLS = await discoverCustomTools();
+  const discoveredTools = await discoverTools();
   
-  for (const tool of CUSTOM_TOOLS) {
+  TOOLS = {};
+  
+  for (const tool of discoveredTools) {
     TOOLS[tool.name] = {
-      description: tool.description,
-      handler: createCustomToolHandler(tool),
-      isCustom: true
+      description: tool.description || tool.name,
+      handler: createToolHandler(tool),
+      inputSchema: tool.inputSchema || {
+        type: 'object',
+        properties: tool.parameters || {},
+      }
     };
   }
+  
+  console.error(`Initialized ${Object.keys(TOOLS).length} tools from WordPress`);
 }
 
 const server = new Server(
   {
     name: `wp-bridge-${SITE_NAME}`,
-    version: '1.0.0',
+    version: '3.3.0',
   },
   {
     capabilities: {
@@ -202,7 +116,7 @@ server.setRequestHandler(InitializeRequestSchema, async (request) => {
     protocolVersion: '2024-11-05',
     serverInfo: {
       name: `wp-bridge-${SITE_NAME}`,
-      version: '1.0.0',
+      version: '3.3.0',
     },
     capabilities: {
       tools: {},
@@ -214,7 +128,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = Object.entries(TOOLS).map(([name, config]) => ({
     name,
     description: config.description,
-    inputSchema: {
+    inputSchema: config.inputSchema || {
       type: 'object',
       properties: {},
     },
