@@ -1039,17 +1039,139 @@ server.setRequestHandler(InitializeRequestSchema, async (request) => {
   };
 });
 
+// Input schemas for each tool
+const TOOL_SCHEMAS = {
+  // Themes
+  wp_install_theme: {
+    type: 'object',
+    properties: {
+      slug: { type: 'string', description: 'Theme slug from WordPress.org (e.g., "kadence")' },
+    },
+    required: ['slug'],
+  },
+  wp_activate_theme: {
+    type: 'object',
+    properties: {
+      slug: { type: 'string', description: 'Theme slug to activate' },
+    },
+    required: ['slug'],
+  },
+  wp_delete_theme: {
+    type: 'object',
+    properties: {
+      slug: { type: 'string', description: 'Theme slug to delete' },
+    },
+    required: ['slug'],
+  },
+  // Plugins
+  wp_install_plugin: {
+    type: 'object',
+    properties: {
+      slug: { type: 'string', description: 'Plugin slug from WordPress.org' },
+    },
+    required: ['slug'],
+  },
+  wp_activate_plugin: {
+    type: 'object',
+    properties: {
+      file: { type: 'string', description: 'Plugin file path (e.g., "plugin-folder/plugin-file.php")' },
+    },
+    required: ['file'],
+  },
+  wp_deactivate_plugin: {
+    type: 'object',
+    properties: {
+      file: { type: 'string', description: 'Plugin file path' },
+    },
+    required: ['file'],
+  },
+  wp_delete_plugin: {
+    type: 'object',
+    properties: {
+      file: { type: 'string', description: 'Plugin file path' },
+    },
+    required: ['file'],
+  },
+  // Posts
+  wp_create_post: {
+    type: 'object',
+    properties: {
+      title: { type: 'string', description: 'Post title' },
+      content: { type: 'string', description: 'Post content (HTML)' },
+      status: { type: 'string', description: 'Post status: draft, publish, pending, private', enum: ['draft', 'publish', 'pending', 'private'] },
+    },
+    required: ['title', 'content'],
+  },
+  wp_get_post: {
+    type: 'object',
+    properties: {
+      id: { type: 'number', description: 'Post ID' },
+    },
+    required: ['id'],
+  },
+  wp_update_post: {
+    type: 'object',
+    properties: {
+      id: { type: 'number', description: 'Post ID' },
+      title: { type: 'string', description: 'Post title' },
+      content: { type: 'string', description: 'Post content (HTML)' },
+      status: { type: 'string', description: 'Post status' },
+    },
+    required: ['id'],
+  },
+  wp_delete_post: {
+    type: 'object',
+    properties: {
+      id: { type: 'number', description: 'Post ID' },
+    },
+    required: ['id'],
+  },
+  // Pages
+  wp_create_page: {
+    type: 'object',
+    properties: {
+      title: { type: 'string', description: 'Page title' },
+      content: { type: 'string', description: 'Page content (HTML)' },
+      status: { type: 'string', description: 'Page status: draft, publish, pending, private' },
+    },
+    required: ['title', 'content'],
+  },
+  wp_get_page: {
+    type: 'object',
+    properties: {
+      id: { type: 'number', description: 'Page ID' },
+    },
+    required: ['id'],
+  },
+  wp_update_page: {
+    type: 'object',
+    properties: {
+      id: { type: 'number', description: 'Page ID' },
+      title: { type: 'string', description: 'Page title' },
+      content: { type: 'string', description: 'Page content (HTML)' },
+    },
+    required: ['id'],
+  },
+  wp_delete_page: {
+    type: 'object',
+    properties: {
+      id: { type: 'number', description: 'Page ID' },
+    },
+    required: ['id'],
+  },
+  // Default schema for tools not explicitly defined
+  _default: {
+    type: 'object',
+    properties: {},
+  },
+};
+
 // Handle list tools
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   const tools = Object.keys(TOOLS).map(name => ({
     name,
     description: TOOL_DESCRIPTIONS[name] || name,
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: { type: 'number', description: 'Resource ID' },
-      },
-    },
+    inputSchema: TOOL_SCHEMAS[name] || TOOL_SCHEMAS._default,
   }));
 
   return { tools };
