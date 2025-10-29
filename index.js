@@ -33,10 +33,16 @@ if (!WP_URL || !WP_USERNAME || !WP_PASSWORD) {
   process.exit(1);
 }
 
-// Clean URL
+// Clean URL and build dynamic namespace (matches WordPress plugin)
 const WP_BASE = WP_URL.replace(/\/$/, '');
 const WP_API_BASE = WP_BASE + '/wp-json/wp/v2';
-const ML_API_BASE = WP_BASE + '/wp-json/ml-cursor-mcp/v1';
+
+// Extract site name for namespace (matches plugin logic)
+const domain = WP_URL.replace(/^https?:\/\//, '').replace(/\/$/, '');
+const domainParts = domain.split('.');
+const siteName = domainParts[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+const ML_NAMESPACE = 'ml-mcp-' + siteName;
+const ML_API_BASE = WP_BASE + '/wp-json/' + ML_NAMESPACE + '/v1';
 
 // Create Basic Auth header
 const authString = Buffer.from(`${WP_USERNAME}:${WP_PASSWORD}`).toString('base64');
