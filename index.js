@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
 /**
- * ML Cursor MCP Server v3.1.0
+ * ML Cursor MCP Server v3.2.0
  * 
- * Complete WordPress MCP Server with ALL 173+ tools
+ * Complete WordPress MCP Server with 157 standard tools + dynamic custom tools
  * Talks directly to WordPress built-in REST API + custom ML Cursor plugin endpoints
  * 
  * ARCHITECTURE:
  * - Uses WordPress /wp/v2/ for standard operations (posts, pages, media, users, etc.)
- * - Uses WordPress /ml-cursor-mcp/v1/ for advanced operations (Spence Style, Database, File System, etc.)
- * - Minimal WordPress plugin enables advanced features
- * - This MCP server contains ALL the tool logic
+ * - Dynamically loads custom tools from /ml-cursor-mcp/v1/manifest endpoint
+ * - Custom tools are provided by ml-cursor-mcp.php plugin (kept private)
+ * - This MCP server is generic and can work with any WordPress site
  */
 
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
@@ -73,6 +73,47 @@ async function callWordPress(endpoint, method = 'GET', body = null, useMLAPI = f
     return data;
   } catch (error) {
     throw new Error(`WordPress API error: ${error.message}`);
+  }
+}
+
+/**
+ * Fetch custom tools from ml-cursor-mcp plugin manifest
+ */
+async function loadCustomTools() {
+  try {
+    const manifest = await callWordPress('/manifest', 'GET', null, true);
+    
+    if (!manifest.success || !manifest.tools) {
+      console.error('No custom tools found in manifest');
+      return {};
+    }
+    
+    console.error(`Loading ${manifest.tool_count} custom tools from plugin v${manifest.version}`);
+    
+    const customTools = {};
+    
+    // Dynamically create tool functions for each custom endpoint
+    for (const tool of manifest.tools) {
+      const toolName = tool.name;
+      const endpoint = tool.endpoint.replace(manifest.base_url, '');
+      const method = tool.method || 'GET';
+      
+      // Create a dynamic function for this tool
+      customTools[toolName] = async (params) => {
+        if (method === 'GET') {
+          const query = new URLSearchParams(params || {}).toString();
+          return await callWordPress(`${endpoint}${query ? '?' + query : ''}`, 'GET', null, true);
+        } else {
+          return await callWordPress(endpoint, method, params, true);
+        }
+      };
+    }
+    
+    return customTools;
+  } catch (error) {
+    console.error(`Warning: Could not load custom tools: ${error.message}`);
+    console.error('Continuing with standard WordPress tools only');
+    return {};
   }
 }
 
@@ -1082,11 +1123,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 // Start server
 async function main() {
+  // Load custom tools from plugin manifest
+  const customTools = await loadCustomTools();
+  
+  // Merge custom tools with standard tools
+  const allTools = { ...TOOLS, ...customTools };
+  
+  // Update the TOOLS object to include custom tools
+  Object.assign(TOOLS, customTools);
+  
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`ML Cursor MCP Server v3.1.0 running`);
+  console.error(`ML Cursor MCP Server v3.2.0 running`);
   console.error(`Connected to: ${WP_URL}`);
-  console.error(`Tools available: ${Object.keys(TOOLS).length}`);
+  console.error(`Standard WordPress tools: ${Object.keys(TOOLS).length - Object.keys(customTools).length}`);
+  console.error(`Custom plugin tools: ${Object.keys(customTools).length}`);
+  console.error(`Total tools available: ${Object.keys(TOOLS).length}`);
 }
 
 main().catch((error) => {

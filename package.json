@@ -1,7 +1,7 @@
 {
   "name": "ml-wp-bridge",
-  "version": "3.1.0",
-  "description": "Complete WordPress MCP Server with ALL 173+ tools",
+  "version": "3.2.0",
+  "description": "Complete WordPress MCP Server with 157 standard tools + dynamic custom tools",
   "main": "index.js",
   "bin": {
     "ml-wp-bridge": "./index.js"
