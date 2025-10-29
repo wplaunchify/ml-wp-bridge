@@ -1,0 +1,16 @@
+{
+  "name": "ml-wp-bridge",
+  "version": "1.0.0",
+  "description": "WordPress REST API bridge",
+  "main": "index.js",
+  "bin": {
+    "ml-wp-bridge": "./index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+
