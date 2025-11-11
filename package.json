@@ -1,7 +1,7 @@
 {
   "name": "ml-wp-bridge",
-  "version": "3.2.1",
-  "description": "Complete WordPress MCP Server with 157 standard tools + dynamic custom tools",
+  "version": "1.0.0",
+  "description": "MCP Server bridge for WordPress REST API and FluentCommunity Manager",
   "main": "index.js",
   "bin": {
     "ml-wp-bridge": "./index.js"
@@ -10,24 +10,19 @@
     "start": "node index.js"
   },
   "keywords": [
-    "wordpress",
     "mcp",
-    "cursor",
-    "model-context-protocol",
-    "ai",
-    "rest-api"
+    "wordpress",
+    "fluent-community",
+    "rest-api",
+    "bridge"
   ],
-  "author": "ML Claude Team",
-  "license": "GPL-2.0-or-later",
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.5.0"
-  },
+  "author": "MinuteLaunch",
+  "license": "MIT",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=14.0.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/wplaunchify/ml-wp-bridge.git"
   }
 }
-
